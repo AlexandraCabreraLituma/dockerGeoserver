@@ -1,0 +1,60 @@
+version: '3.5'
+
+services:
+  postgis:
+    container_name: timescaledb-visor
+    image: timescale/timescaledb-postgis
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgis}
+      PGDATA: /data/postgres
+    volumes:
+       - postgres:/data/postgres
+    ports:
+      - "15432:5432"
+    expose:
+      - "15432"
+    networks:
+      - geocelec
+    restart: unless-stopped
+  
+  pgadmin:
+    container_name: pgadmin-visor
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@ubica.ec}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-postgis}
+    volumes:
+       - pgadmin:/root/.pgadmin
+    ports:
+      - "${PGADMIN_PORT:-8500}:80"
+    networks:
+      - geocelec
+    restart: unless-stopped
+      
+  geoserver:
+      container_name: geoserver-visor
+      image: kartoza/geoserver:2.19.0
+      volumes:
+        - ./geoserver-data:/opt/geoserver/data_dir
+        - ./resources/web.xml:/usr/local/tomcat/webapps/geoserver/WEB-INF/web.xml
+        - ./resources/indexer.xml:/usr/local/tomcat/webapps/geoserver/WEB-INF/indexer.xml
+        - ./resources/_auxiliary.xml:/usr/local/tomcat/webapps/geoserver/WEB-INF/_auxiliary.xml
+        - ./resources/databasestore.properties:/usr/local/tomcat/webapps/geoserver/WEB-INF/databasestore.properties
+        - ./data2:/opt/geoserver/data_dir/datos
+        - ./data:/opt/geoserver/data_dir/data
+      ports:
+        - "8600:8080"
+      networks:
+        - geocelec
+      environment:
+        - STABLE_EXTENSIONS=importer-plugin,netcdf-out-plugin,netcdf-plugin,sldservice-plugin
+ 
+
+networks:
+  geocelec:
+    driver: bridge
+
+volumes:
+    postgres:
+    pgadmin:
